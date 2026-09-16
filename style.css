@@ -4,7 +4,7 @@
 
 body {
   margin: 0;
-  background: hsl(153, 92%, 30%);
+  background: lch(58.4% 43.1 171.5);
   color: #222;
   font-family: "Helvetica Neue", Arial, sans-serif;
 }
@@ -214,5 +214,19 @@ nav h1 {
 
 #portfolio a:hover::after {
   opacity: 1;
+}
+/* Portfolio page layout */
+
+.portfolio-page main {
+  display: block;
+  min-height: auto;
+}
+
+.portfolio-page .content {
+  width: 100%;
+}
+
+.portfolio-page #portfolio {
+  width: 100%;
 }
 
