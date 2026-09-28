@@ -1,108 +1,377 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Bouncing Box</title>
-    <script src="jquery.min.js"></script>
-    <style>
-      .box {
-        width: 70px;
-        height: 70px;
-        background-color: teal;
-        font-size: 300%;
-        text-align: center;
-        user-select: none;
-        display: block;
-        position: absolute;
-        top: 100px;
-        /* Change me! */
-        left: 0px;
+
+<head>
+  <meta charset="utf-8" />
+  <title>Bouncing Box</title>
+  <script src="jquery.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    .box {
+      width: 70px;
+      height: 70px;
+      background-color: #36c7a3;
+      border: 2px solid #adffe2;
+      box-shadow: 0 0 0 3px rgba(14, 32, 29, 0.6), 0 8px 24px rgba(0, 0, 0, 0.3);
+      color: #10231f;
+      display: grid;
+      place-items: center;
+      font: 700 32px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+      user-select: none;
+      position: absolute;
+      top: 100px;
+      left: 0px;
+      z-index: 1;
+    }
+
+    .board {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      background-color: #172a25;
+      background-image:
+        linear-gradient(rgba(215, 240, 219, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(215, 240, 219, 0.07) 1px, transparent 1px),
+        repeating-linear-gradient(135deg, transparent 0 30px, rgba(239, 128, 99, 0.07) 30px 32px, transparent 32px 64px);
+      background-size: 40px 40px, 40px 40px, 128px 128px;
+    }
+
+    .scoreboard {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      right: 18px;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: #e5f0df;
+      font: 600 14px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .score {
+      min-width: 70px;
+      padding: 10px 12px;
+      border: 1px solid rgba(200, 230, 210, 0.25);
+      border-radius: 4px;
+      background: rgba(10, 25, 22, 0.72);
+    }
+
+    .score strong {
+      margin-left: 6px;
+      color: #ff9d7d;
+    }
+
+    .level-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 2;
+      display: none;
+      padding: 14px 22px;
+      border: 1px solid #ff9d7d;
+      border-radius: 4px;
+      background: rgba(10, 25, 22, 0.9);
+      color: #f0f4e9;
+      font: 700 24px ui-monospace, SFMono-Regular, Consolas, monospace;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+
+    .level-banner.is-visible {
+      display: block;
+      animation: level-up 1.2s ease both;
+    }
+
+    @keyframes level-up {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -40%);
       }
 
-      .board {
-        height: 100vh;
+      20%,
+      75% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
       }
-    </style>
-    <!-- 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
-  </head>
 
-  <body class="board">
-    <!-- HTML for the box -->
-    <div class="box">?</div>
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+      }
+    }
 
-    <script>
-      (function () {
-        "use strict";
-        /* global jQuery */
+    .game-over {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: none;
+      place-content: center;
+      justify-items: center;
+      gap: 12px;
+      background: rgba(9, 20, 18, 0.82);
+      color: #f0f4e9;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      text-align: center;
+    }
 
-        //////////////////////////////////////////////////////////////////
-        /////////////////// SETUP DO NOT DELETE //////////////////////////
-        //////////////////////////////////////////////////////////////////
+    .game-over.is-visible {
+      display: grid;
+    }
 
-        var box = jQuery(".box"); // reference to the HTML .box element
-        var board = jQuery(".board"); // reference to the HTML .board element
-        var boardWidth = board.width(); // the maximum X-Coordinate of the screen
+    .game-over h1 {
+      margin: 0;
+      color: #ff9d7d;
+      font-size: 32px;
+    }
 
-        // update the boardWidth variable when the window is resized
-        jQuery(window).on("resize", function () {
-          boardWidth = board.width();
-        });
+    .game-over p {
+      margin: 0;
+    }
 
-        // Every 50 milliseconds, call the update Function (see below)
-        setInterval(update, 50);
+    .game-over button {
+      margin-top: 8px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 4px;
+      background: #36c7a3;
+      color: #10231f;
+      font: 700 14px ui-monospace, SFMono-Regular, Consolas, monospace;
+      cursor: pointer;
+    }
 
-        // Every time the box is clicked, call the handleBoxClick Function (see below)
-        box.on("click", handleBoxClick);
+    .game-over button:focus-visible {
+      outline: 3px solid #ff9d7d;
+      outline-offset: 3px;
+    }
+  </style>
+  <!-- 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+</head>
 
-        // moves the Box to a new position on the screen along the X-Axis
-        function moveBoxTo(newPositionX) {
-          box.css("left", newPositionX);
+<body class="board">
+  <!-- HTML for the box -->
+  <div class="box">?</div>
+  <div class="scoreboard" aria-live="polite">
+    <div class="score">Hits<strong id="points">0</strong></div>
+    <div class="score">Misses<strong id="misses">0 / 15</strong></div>
+    <div class="score">Level<strong id="level">1</strong></div>
+    <div class="score">Level hits<strong id="level-progress">0 / 5</strong></div>
+  </div>
+  <div class="level-banner" id="level-banner" aria-live="polite"></div>
+  <div class="game-over" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+    <h1 id="game-over-title">GAME OVER</h1>
+    <p>Too many misses. Take another shot?</p>
+    <button id="restart" type="button">Play again</button>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      /* global jQuery */
+
+      //////////////////////////////////////////////////////////////////
+      /////////////////// SETUP DO NOT DELETE //////////////////////////
+      //////////////////////////////////////////////////////////////////
+
+      var box = jQuery(".box"); // reference to the HTML .box element
+      var board = jQuery(".board"); // reference to the HTML .board element
+      var pointsDisplay = jQuery("#points");
+      var missesDisplay = jQuery("#misses");
+      var levelDisplay = jQuery("#level");
+      var levelProgressDisplay = jQuery("#level-progress");
+      var levelBanner = jQuery("#level-banner");
+      var gameOverScreen = jQuery(".game-over");
+      var restartButton = jQuery("#restart");
+      var boardWidth = board.width(); // the maximum X-Coordinate of the screen
+      var boardHeight = board.height();
+
+      // update the boardWidth variable when the window is resized
+      jQuery(window).on("resize", function () {
+        boardWidth = board.width();
+        boardHeight = board.height();
+      });
+
+      // Every 50 milliseconds, call the update Function (see below)
+      var interval = setInterval(update, 50);
+
+      // Every time the box is clicked, call the handleBoxClick Function (see below)
+      box.on("click", handleBoxClick);
+      board.on("click", handleMissClick);
+      restartButton.on("click", function (event) {
+        event.stopPropagation();
+        restartGame();
+      });
+
+      // moves the Box to a new position on the screen along the X-Axis
+      function moveBoxTo(newPositionX, newPositionY) {
+        box.css("left", newPositionX);
+        box.css("top", newPositionY);
+      }
+
+      // changes the text displayed on the Box
+      function changeBoxText(newText) {
+        box.text(newText);
+      }
+
+      //////////////////////////////////////////////////////////////////
+      /////////////////// YOUR CODE BELOW HERE /////////////////////////
+      //////////////////////////////////////////////////////////////////
+
+      // TODO 2 - Variable declarations
+      var positionX = 0;
+      var positionY = 100;
+      var points = 0;
+      var misses = 0;
+      var level = 1;
+      var hitsThisLevel = 0;
+      var hitsToNextLevel = 5;
+      var maxMisses = 15;
+      var maxSpeed = 18;
+      var levelBannerTimer;
+      var gameOver = false;
+      var speedX = 12;
+      var speedY = 9;
+
+
+      /**
+       * This Function will be called 20 times/second.
+       * Each time it is called, it should move the Box to a new location.
+       * If the box drifts off the screen, turn it around!
+       */
+      function update() {
+        positionX += speedX;
+        positionY += speedY;
+
+        var maxX = Math.max(0, boardWidth - box.outerWidth());
+        var maxY = Math.max(0, boardHeight - box.outerHeight());
+
+        if (positionX > maxX) {
+          positionX = maxX;
+          speedX = -increaseSpeed(speedX, 0.25);
+        } else if (positionX < 0) {
+          positionX = 0;
+          speedX = -increaseSpeed(speedX, 0.25);
         }
 
-        // changes the text displayed on the Box
-        function changeBoxText(newText) {
-          box.text(newText);
+        if (positionY > maxY) {
+          positionY = maxY;
+          speedY = -increaseSpeed(speedY, 0.25);
+        } else if (positionY < 0) {
+          positionY = 0;
+          speedY = -increaseSpeed(speedY, 0.25);
         }
 
-        //////////////////////////////////////////////////////////////////
-        /////////////////// YOUR CODE BELOW HERE /////////////////////////
-        //////////////////////////////////////////////////////////////////
+        moveBoxTo(positionX, positionY);
+      }
 
-        // TODO 2 - Variable declarations
-
-
-
-
-
-        /**
-         * This Function will be called 20 times/second.
-         * Each time it is called, it should move the Box to a new location.
-         * If the box drifts off the screen, turn it around!
-         */
-        function update() {
-
-        
-
-          
+      /**
+       * This Function will be called each time the box is clicked.
+       * Each time it is called, it should perform each of the following actions:
+       * - increase the points total
+       * - increase the speed
+        * - move the box to a new random position.
+       */
+      function handleBoxClick() {
+        if (gameOver) {
+          return;
         }
 
-        /**
-         * This Function will be called each time the box is clicked.
-         * Each time it is called, it should perform each of the following actions:
-         * - increase the points total
-         * - increase the speed
-         * - move the box to the left side of the screen.
-         */
-        function handleBoxClick() {
+        points += 1;
+        hitsThisLevel += 1;
+        speedX = increaseSpeed(speedX, 0.25);
+        speedY = increaseSpeed(speedY, 0.25);
+        if (hitsThisLevel >= hitsToNextLevel) {
+          level += 1;
+          hitsThisLevel = 0;
+          hitsToNextLevel += 1;
+          speedX = increaseSpeed(speedX, 0.75);
+          speedY = increaseSpeed(speedY, 0.75);
+          levelDisplay.text(level);
+          levelBanner.text("LEVEL " + level);
+          levelBanner.addClass("is-visible");
+          clearTimeout(levelBannerTimer);
+          levelBannerTimer = setTimeout(function () {
+            levelBanner.removeClass("is-visible");
+          }, 1200);
+        }
+        levelProgressDisplay.text(hitsThisLevel + " / " + hitsToNextLevel);
+        moveBoxToRandomPosition();
+        pointsDisplay.text(points);
+        changeBoxText(points);
+      }
 
+      function moveBoxToRandomPosition() {
+        var maxX = Math.max(0, boardWidth - box.outerWidth());
+        var maxY = Math.max(0, boardHeight - box.outerHeight());
+        var minimumDistance = Math.min(160, maxX + maxY);
+        var nextX = positionX;
+        var nextY = positionY;
 
-
-
+        for (var attempt = 0; attempt < 12; attempt += 1) {
+          nextX = Math.random() * maxX;
+          nextY = Math.random() * maxY;
+          if (Math.abs(nextX - positionX) + Math.abs(nextY - positionY) >= minimumDistance) {
+            break;
+          }
         }
 
+        if (Math.abs(nextX - positionX) + Math.abs(nextY - positionY) < minimumDistance) {
+          nextX = maxX - positionX;
+          nextY = maxY - positionY;
+        }
 
-        
-      })();
-    </script>
-  </body>
+        positionX = nextX;
+        positionY = nextY;
+      }
+
+      function increaseSpeed(speed, amount) {
+        return Math.sign(speed) * Math.min(Math.abs(speed) + amount, maxSpeed);
+      }
+
+      function handleMissClick(event) {
+        if (gameOver || event.target === box[0]) {
+          return;
+        }
+
+        misses += 1;
+        missesDisplay.text(misses + " / " + maxMisses);
+
+        if (misses >= maxMisses) {
+          gameOver = true;
+          clearInterval(interval);
+          gameOverScreen.addClass("is-visible");
+        }
+      }
+
+      function restartGame() {
+        points = 0;
+        misses = 0;
+        level = 1;
+        hitsThisLevel = 0;
+        hitsToNextLevel = 5;
+        positionX = 0;
+        positionY = 100;
+        speedX = 12;
+        speedY = 9;
+        gameOver = false;
+        clearTimeout(levelBannerTimer);
+        levelBanner.removeClass("is-visible");
+        pointsDisplay.text(points);
+        missesDisplay.text("0 / " + maxMisses);
+        levelDisplay.text(level);
+        levelProgressDisplay.text(hitsThisLevel + " / " + hitsToNextLevel);
+        changeBoxText("?");
+        gameOverScreen.removeClass("is-visible");
+        interval = setInterval(update, 50);
+      }
+
+
+    })();
+  </script>
+</body>
+
 </html>
