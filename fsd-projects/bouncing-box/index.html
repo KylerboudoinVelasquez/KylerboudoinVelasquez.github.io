@@ -282,6 +282,10 @@
 
         points += 1;
         hitsThisLevel += 1;
+        if (misses > 0) {
+          misses -= 1;
+          missesDisplay.text(misses + " / " + maxMisses);
+        }
         speedX = increaseSpeed(speedX, 0.25);
         speedY = increaseSpeed(speedY, 0.25);
         if (hitsThisLevel >= hitsToNextLevel) {
